@@ -5,7 +5,7 @@ Friend wanted a script to automate download of Paws & Tails for a Linux media se
 
 Episodes are dated every seven days, uses a JSON file to track what has been downloaded.
 
-Requires `urllib3`, but I think that's commonly found in the "system" Python packages.
+Requires `requests`, but I think that's commonly found in the "system" Python packages.
 
 """
 
@@ -14,10 +14,11 @@ import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-import urllib3
+import requests
 
-BASE_DATE = date(2021, 9, 4)
 DATA_FILE = "pnt_data.json"
+# Day of week that episodes are dated
+EPISODE_DAY = 5  # Monday = 0, Sunday = 6
 URL_PATTERN = (
     "https://insightforliving.swncdn.com/mp3/podcasts/PNT/PNT{:%Y.%m.%d}-PODCAST.mp3"
 )
@@ -44,30 +45,32 @@ def main():
     if "downloaded" in settings:
         last_downloaded = datetime.strptime(settings["downloaded"], "%Y-%m-%d").date()
         print(f"Last episode downloaded was {last_downloaded}")
-        processing = last_downloaded + timedelta(days=7)
+        starting_date = last_downloaded + timedelta(days=7)
     else:
-        # go back a couple weeks
-        elapsed_time = date.today() - BASE_DATE
-        weeks = int(elapsed_time.days / 7) - 2
-        processing = BASE_DATE + timedelta(days=weeks * 7)
-        print(f"Starting from {processing}")
+        print("No historical data found, getting episodes for this month")
+        # start on the first and add days until we get to the day episodes are published
+        starting_date = date.today().replace(day=1)
+        while starting_date.weekday() != EPISODE_DAY:
+            starting_date += timedelta(days=1)
 
-    http = urllib3.PoolManager()
+    print(f"Starting from {starting_date}")
+    processing = starting_date
+
     today = date.today()
-    # the whole month is available at once, so load through next month
+    # the whole month is available at once, so load through end of month, not today
     while (processing.year, processing.month) <= (today.year, today.month):
         url = URL_PATTERN.format(processing)
         print(f"Getting {url}...")
-        r = http.request("GET", url)
+        r = requests.get(url)
 
-        if r.status != 200:
+        if not r.ok:
             print(f"Failed to download episode for {processing}, quiting.")
             break
 
         audio_file = output_path / f"PNT{processing:%Y.%m.%d}-PODCAST.mp3"
         print(f"Writing to {audio_file}")
         with open(audio_file, "wb") as f:
-            f.write(r.data)
+            f.write(r.content)
 
         settings["downloaded"] = str(processing)
         processing += timedelta(days=7)
