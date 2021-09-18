@@ -1,4 +1,7 @@
-"""Download script for Paws and Tails epiodes (aka "PnT") for my brother-in-law.
+#!/usr/bin/env python3
+"""Script to download episodes dated weekly (but published monthly).
+
+Friend wanted a script to automate download of Paws & Tails for a Linux media server.
 
 Episodes are dated every seven days, uses a JSON file to track what has been downloaded.
 
@@ -43,9 +46,9 @@ def main():
         print(f"Last episode downloaded was {last_downloaded}")
         processing = last_downloaded + timedelta(days=7)
     else:
-        # go back about a month, using `BASE_DATE` to determine the correct date
+        # go back a couple weeks
         elapsed_time = date.today() - BASE_DATE
-        weeks = int(elapsed_time.days / 7) - 4
+        weeks = int(elapsed_time.days / 7) - 2
         processing = BASE_DATE + timedelta(days=weeks * 7)
         print(f"Starting from {processing}")
 
