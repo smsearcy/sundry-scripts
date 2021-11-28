@@ -13,8 +13,8 @@ import re
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import date
-from decimal import Decimal
+from datetime import date, datetime
+from decimal import Decimal, ROUND_UP
 from typing import List
 
 
@@ -86,6 +86,12 @@ def main():
         help="Periodic principal payment every Y months",
     )
     parser.add_argument(
+        "--start-month",
+        type=parse_month,
+        metavar="YYYY-MM",
+        help="Month to start payment in",
+    )
+    parser.add_argument(
         "--verbose", action="store_true", default=False, help="Print monthly details"
     )
 
@@ -98,6 +104,7 @@ def main():
         extra_payments=args.extra_payments,
         periodic_payments=args.periodic_payments,
         verbose=args.verbose,
+        starting=args.start_month,
     )
 
 
@@ -140,7 +147,8 @@ def calculate(
     while balance > 0:
         month = next(months)
         count += 1
-        interest_payment = balance * rate / 12
+        # the rounding method might vary by lender
+        interest_payment = (balance * rate / 12).quantize(Decimal("1.00"), ROUND_UP)
         totals["interest"] += interest_payment
         principal_payment = payment - interest_payment
 
@@ -197,6 +205,10 @@ def iter_months(start: date = None):
         year, month = divmod(month_counter, 12)
         yield date(year, month + 1, 1)
         month_counter += 1
+
+
+def parse_month(value: str) -> date:
+    return datetime.strptime(value, "%Y-%m").date()
 
 
 if __name__ == "__main__":
