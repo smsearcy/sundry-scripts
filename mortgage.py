@@ -14,7 +14,7 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime
-from decimal import Decimal, ROUND_UP
+from decimal import ROUND_UP, Decimal
 from typing import List
 
 
