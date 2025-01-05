@@ -12,10 +12,10 @@ import argparse
 import re
 import sys
 from collections import defaultdict
+from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import ROUND_UP, Decimal
-from typing import List
 
 
 @dataclass
@@ -48,7 +48,7 @@ class PeriodicPayment:
         )
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Calculate mortgage payoff schedule")
     parser.add_argument(
         "--balance",
@@ -113,11 +113,11 @@ def calculate(
     payment: Decimal,
     rate: Decimal,
     *,
-    extra_payments: List[ExtraPayment] = None,
-    periodic_payments: List[PeriodicPayment] = None,
+    extra_payments: list[ExtraPayment] | None = None,
+    periodic_payments: list[PeriodicPayment] | None = None,
     verbose: bool = False,
-    starting: date = None,
-):
+    starting: date | None = None,
+) -> None:
     if extra_payments is None:
         extra_payments = []
     if periodic_payments is None:
@@ -184,7 +184,8 @@ def calculate(
 
         if verbose:
             print(
-                f"{month:%b %Y}  {principal_payment:10.2f}  {interest_payment:10.2f}  "
+                f"{month:%b %Y}  {principal_payment:10.2f}  {
+                    interest_payment:10.2f}  "
                 f"{balance:10.2f}  {principal_payment + principal_extra:10.2f}"
             )
 
@@ -194,7 +195,7 @@ def calculate(
     print(f"Total Interest Paid: ${totals['interest']:,.2f}")
 
 
-def iter_months(start: date = None):
+def iter_months(start: date = None) -> Iterator[date]:
     # Based on https://stackoverflow.com/a/5734564
     if not start:
         start = date.today()

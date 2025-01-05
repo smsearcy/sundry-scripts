@@ -37,7 +37,7 @@ def main():
     settings_file = output_path / DATA_FILE
 
     if settings_file.exists():
-        with open(settings_file, "r") as f:
+        with open(settings_file) as f:
             settings = json.load(f)
     else:
         settings = {}
