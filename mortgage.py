@@ -27,6 +27,7 @@ class ExtraPayment:
 
     @classmethod
     def parse(cls, value: str) -> ExtraPayment:
+        """Parse extra payment from string."""
         if not (match := re.match(r"(\d+):(\d+(?:\.\d{2})?)", value)):
             raise ValueError(f"Payment needs to be in form X:####.##: {value}")
         return ExtraPayment(count=int(match.group(1)), amount=Decimal(match.group(2)))
@@ -41,6 +42,7 @@ class PeriodicPayment:
 
     @classmethod
     def parse(cls, value: str) -> PeriodicPayment:
+        """Parse periodic payment from string."""
         if not (match := re.match(r"(\d+):(\d+(?:\.\d{2})?)", value)):
             raise ValueError(f"Payment needs to be in form X:####.##: {value}")
         return PeriodicPayment(
@@ -49,6 +51,7 @@ class PeriodicPayment:
 
 
 def main() -> None:
+    """Parse command line arguments then run the calculator."""
     parser = argparse.ArgumentParser(description="Calculate mortgage payoff schedule")
     parser.add_argument(
         "--balance",
@@ -87,7 +90,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--start-month",
-        type=parse_month,
+        type=_parse_month,
         metavar="YYYY-MM",
         help="Month to start payment in",
     )
@@ -116,8 +119,17 @@ def calculate(
     extra_payments: list[ExtraPayment] | None = None,
     periodic_payments: list[PeriodicPayment] | None = None,
     verbose: bool = False,
-    starting: date | None = None,
+    starting: date,
 ) -> None:
+    """Calculate principal and interest payments over the life of the loan.
+
+    Optionally prints the running totals.
+
+    """
+    if balance <= 0:
+        print("Starting balance must be greater than $0")
+        return
+
     if extra_payments is None:
         extra_payments = []
     if periodic_payments is None:
@@ -141,8 +153,8 @@ def calculate(
             )
         )
 
-    totals = defaultdict(int)
-    months = iter_months(starting)
+    totals = defaultdict(Decimal)
+    months = _iter_months(starting)
     count = 0
     while balance > 0:
         month = next(months)
@@ -184,8 +196,7 @@ def calculate(
 
         if verbose:
             print(
-                f"{month:%b %Y}  {principal_payment:10.2f}  {
-                    interest_payment:10.2f}  "
+                f"{month:%b %Y}  {principal_payment:10.2f}  {interest_payment:10.2f}  "
                 f"{balance:10.2f}  {principal_payment + principal_extra:10.2f}"
             )
 
@@ -195,10 +206,10 @@ def calculate(
     print(f"Total Interest Paid: ${totals['interest']:,.2f}")
 
 
-def iter_months(start: date = None) -> Iterator[date]:
+def _iter_months(start: date | None = None) -> Iterator[date]:
+    """Yield sequential months (first day of the month)."""
     # Based on https://stackoverflow.com/a/5734564
-    if not start:
-        start = date.today()
+    start = start or date.today()
 
     month_counter = start.year * 12 + start.month - 1
 
@@ -208,7 +219,7 @@ def iter_months(start: date = None) -> Iterator[date]:
         month_counter += 1
 
 
-def parse_month(value: str) -> date:
+def _parse_month(value: str) -> date:
     return datetime.strptime(value, "%Y-%m").date()
 
 
